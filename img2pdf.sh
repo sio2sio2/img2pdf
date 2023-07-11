@@ -136,6 +136,7 @@ PYTHON=$(command -v python || command -v python3)
 [ -n "$PYTHON" ] || error 3 "Se necesita Python en el sistema para hacer operaciones aritméticas."
 CONVERT=$(command -v convert)
 [ -n "$CONVERT" ] || error 3 "No se encuentra 'convert'. Es probable que necesite instalar ImageMagick."
+GHOSTVIEW=$(command -v gs)
 
 
 { # Tratamiento de los argumento del programa.
@@ -147,7 +148,8 @@ CONVERT=$(command -v convert)
 
    format=4
    border=20
-   while [ $# -gt 0 ]; do
+   retr=0
+   while [ $# -gt $retr ]; do
       case $1 in
          -a|--din-a)
             format=$2
@@ -181,6 +183,13 @@ CONVERT=$(command -v convert)
          --)
             shift
             break ;;
+         --??*=*)  # --opt=value
+            arg=${1%%=*}
+            value=${1#*=}
+            shift
+            set -- "$arg" "$value" "$@"
+            continue
+            ;;
          --*|-?)
             error 2 "$1: Opción desconocida"
             ;; 
@@ -193,7 +202,11 @@ CONVERT=$(command -v convert)
             set -- -"$arg" "$rarg" "$@"
             continue
             ;;
-         *) break;;
+         *) arg=$1
+            shift
+            set -- "$@" "$arg"
+            retr=$((retr+1))
+            continue;;
       esac
       shift
    done
@@ -201,7 +214,7 @@ CONVERT=$(command -v convert)
    case $# in
       0) error 2 "¿Qué imagen quiere convertir?";;
       1) if [ -n "$single" ]; then
-            error 0 "Sólo se convertirá una imagen, por lo que '-s' no tiene sentido."
+            error 0 "'-s' es redundante: sólo se convertirá una imagen."
             single=
          fi
          ;;
@@ -209,18 +222,16 @@ CONVERT=$(command -v convert)
    esac
 }
 
-target=${target:-${1%.*}.pdf}
-if [ -n "$single" ]; then
-   [ -z "$force" ] && [ "$target" != "-" ] && [ -f "$target" ] && error 4 "'$target' existe: bórrelo o utilice la opción -f."
-elif [ -z "$force" ]; then
-   for image in "$@"; do
-      [  -f "${image%.*}.pdf" ] && error  4 "'${image%.*}.pdf' existe: bórrelo o utilice la opción -f."
-   done
-fi
+[ -n "$single" ] && [ -z "$GHOSTVIEW" ] && error 3 "Ghostscript no encontrado. Se necesita para crear un PDF único."
 
-if [ -n "$single" ]; then
-   GHOSTVIEW=$(command -v gs)
-   [ -n "$GHOSTVIEW" ] || error 3 "Ghostscript no encontrado. Se necesita para crear un PDF único."
+target=${target:-${1%.*}.pdf}
+if [ -z "$force" ]; then
+   [ "$target" != "-" ] && [ -f "$target" ] && error 4 "'$target' existe: bórrelo o utilice la opción -f."
+   if [ -z "$single" ]; then
+      for image in "$@"; do
+         [  -f "${image%.*}.pdf" ] && error  4 "'${image%.*}.pdf' existe: bórrelo o utilice la opción -f."
+      done
+   fi
 fi
 
 format=$(calc_formato "$format")
