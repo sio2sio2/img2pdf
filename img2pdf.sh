@@ -26,6 +26,25 @@ Opciones:
  -v, --vertical      Siempre obtiene un PDF vertical, por lo que
                      el programa rota 90º la imagen si detecta
                      que ésta es más ancha que alta.
+
+Ejemplos:
+
+ 1. Convierte una imagen en un PDF llamado imagen.pdf con tamaño A4:
+
+    $ img2pdf.sh imagen.jpg
+
+ 2. Ídem, pero cambia el nombre del PDF resultante:
+
+    $ img2pdf.sh -odocumento.pdf imagen.jpg
+
+ 3. Hace la conversión pero el tamaño es A3:
+
+    $ img2pdf.sh -a3 imagen.jpg
+
+ 4. Convierte varias imágenes obteniéndose un único PDF. La primera imagen
+    ocupará la primera página y la segunda, la segunda:
+
+    $ img2pdf.sg -odocumento.pdf imagen1.jpg imagen2.jpg
 "
 }
 
