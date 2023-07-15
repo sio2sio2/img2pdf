@@ -11,8 +11,7 @@
                          defecto, 4.
      -b. --border N      Anchura en pixeles del borde que se añade a la
                          imagen original. Por defecto, 20.
-     -f, --force         Genera el PDF, aunque deba escribir otro con
-                         su mismo nombre.
+     -f, --force         Genera el PDF, aunque deba sobrescribir el destino.
      -h, --help          Muestra esta misma ayuda.
      -o, --output [XXX]  Nombre del PDF resultante. Si se proporcionan
                          varias imágenes de entrada, se presupone -s.
@@ -42,3 +41,4 @@
         ocupará la primera página y la segunda, la segunda:
 
         $ img2pdf.sg -odocumento.pdf imagen1.jpg imagen2.jpg
+

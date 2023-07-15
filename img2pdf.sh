@@ -14,8 +14,7 @@ Opciones:
                      defecto, 4.
  -b. --border N      Anchura en pixeles del borde que se añade a la
                      imagen original. Por defecto, 20.
- -f, --force         Genera el PDF, aunque deba escribir otro con
-                     su mismo nombre.
+ -f, --force         Genera el PDF, aunque deba sobrescribir el destino.
  -h, --help          Muestra esta misma ayuda.
  -o, --output [XXX]  Nombre del PDF resultante. Si se proporcionan
                      varias imágenes de entrada, se presupone -s.
@@ -37,7 +36,7 @@ Ejemplos:
 
     $ img2pdf.sh -odocumento.pdf imagen.jpg
 
- 3. Hace la conversión pero el tamaño es A3:
+ 3. Hace la misma conversión, pero el tamaño es A3:
 
     $ img2pdf.sh -a3 imagen.jpg
 
@@ -47,6 +46,11 @@ Ejemplos:
     $ img2pdf.sg -odocumento.pdf imagen1.jpg imagen2.jpg
 "
 }
+
+
+PYTHON=$(command -v python || command -v python3)
+CONVERT=$(command -v convert)
+GHOSTVIEW=$(command -v gs)
 
 
 error() {
@@ -151,19 +155,12 @@ es_mayor() {
 }
 
 
-PYTHON=$(command -v python || command -v python3)
 [ -n "$PYTHON" ] || error 3 "Se necesita Python en el sistema para hacer operaciones aritméticas."
-CONVERT=$(command -v convert)
 [ -n "$CONVERT" ] || error 3 "No se encuentra 'convert'. Es probable que necesite instalar ImageMagick."
-GHOSTVIEW=$(command -v gs)
 
 
 { # Tratamiento de los argumento del programa.
-   requiere_parametro() {
-      local opts="a:b:vhfso:q"
-
-      expr "$opts" : ".*$1:" > /dev/null
-   }
+   opts="a:b:vhfso:q"
 
    format=4
    border=20
@@ -175,12 +172,11 @@ GHOSTVIEW=$(command -v gs)
             if ! es_entero "$format" || [ "$format" -lt 0 ] || [ "$format" -gt 5 ]; then
                error 1 "DIN-A$format no soportado. Debe ser entre a0 y a5"
             fi
-            shift
-            ;;
+            shift ;;
          -b|--border)
             border=$2
             es_entero "$border" || error 1 "$1 requiere un número positivo"
-            shift;;
+            shift ;;
          -v|--vertical)
             rotate=1
             ;;
@@ -207,8 +203,7 @@ GHOSTVIEW=$(command -v gs)
             value=${1#*=}
             shift
             set -- "$arg" "$value" "$@"
-            continue
-            ;;
+            continue ;;
          --*|-?)
             error 2 "$1: Opción desconocida"
             ;; 
@@ -216,16 +211,15 @@ GHOSTVIEW=$(command -v gs)
             arg=$(printf "%.2s" "$1")
             arg=${arg#?}
             rarg="${1#-$arg}" 
-            requiere_parametro "$arg" || rarg="-$rarg"
+            expr "$opts" : ".*$arg:" > /dev/null || rarg="-$rarg"
             shift
             set -- -"$arg" "$rarg" "$@"
-            continue
-            ;;
+            continue ;;
          *) arg=$1
             shift
             set -- "$@" "$arg"
             retr=$((retr+1))
-            continue;;
+            continue ;;
       esac
       shift
    done
@@ -247,7 +241,7 @@ target=${target:-${1%.*}.pdf}
 if [ -z "$force" ]; then
    [ "$target" != "-" ] && [ -f "$target" ] && error 4 "'$target' existe: bórrelo o utilice la opción -f."
    if [ -z "$single" ]; then
-      for image in "$@"; do
+      for image; do
          [  -f "${image%.*}.pdf" ] && error  4 "'${image%.*}.pdf' existe: bórrelo o utilice la opción -f."
       done
    fi
@@ -256,7 +250,7 @@ fi
 format=$(calc_formato "$format")
 copy=$(mktemp -p /tmp "tmpimg.XXXXX")
 
-for image in "$@"; do
+for image; do
    shift
    [ -f "$image" ] || { error 0 "'$image': archivo no encontrado. Se salta."; continue; } 
    # Recortamos para dejar sólo la superficie dibujada y eliminar bordes vacíos.
